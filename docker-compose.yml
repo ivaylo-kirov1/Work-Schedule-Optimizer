@@ -1,0 +1,105 @@
+# Full stack. Setup: cp .env.example .env (set SECRET_KEY + manager creds),
+# then `docker compose up --build` and open http://localhost:8080.
+# Local dev datastores only: `docker compose up db redis`.
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-scheduser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-schedpass}
+      POSTGRES_DB: ${POSTGRES_DB:-schedules}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-scheduser} -d ${POSTGRES_DB:-schedules}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:8
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # one-shot: migrate + seed, then exit (runs from backend workdir for alembic/seed)
+  migrate:
+    build:
+      context: ./backend
+    env_file: .env
+    command: ["sh", "-c", "alembic upgrade head && python seed.py"]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: "no"
+
+  backend:
+    build:
+      context: ./backend
+    env_file: .env
+    # no host port (reached via nginx proxy); uncomment to hit FastAPI directly in dev:
+    # ports:
+    #   - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health', timeout=3).status==200 else 1)"]
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
+
+  worker:
+    build:
+      context: ./backend
+    env_file: .env
+    command: ["celery", "-A", "app.celery_app.celery_app", "worker", "--loglevel=info"]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    # override the backend image's HTTP healthcheck: this runs Celery, not uvicorn
+    healthcheck:
+      test: ["CMD", "celery", "-A", "app.celery_app.celery_app", "inspect", "ping"]
+      interval: 15s
+      timeout: 10s
+      start_period: 20s
+      retries: 5
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # empty -> SPA uses same-origin /api (proxied by nginx)
+        VITE_API_BASE_URL: ""
+    ports:
+      # the only host-published port; nginx listens on 8080 inside
+      - "8080:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:

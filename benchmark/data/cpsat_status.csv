@@ -1,0 +1,4 @@
+size,n_runs,optimal,feasible,infeasible,unknown,other,proven_optimal_rate,mean_optimality_gap
+small,20,14,6,0,0,0,0.7,0.043518445073218635
+medium,20,0,20,0,0,0,0.0,0.20058817583483088
+large,20,0,18,0,2,0,0.0,0.4105527434456038

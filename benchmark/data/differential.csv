@@ -1,0 +1,3 @@
+size,seed,cpsat_status,ga_hard_violations,cpsat_hard_violations,verdict
+large,7,UNKNOWN,0,90,GA_FOUND_CPSAT_MISSED
+large,20,UNKNOWN,0,90,GA_FOUND_CPSAT_MISSED

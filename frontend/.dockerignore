@@ -1,0 +1,22 @@
+# Dependencies are reinstalled from the lockfile inside the build stage
+node_modules
+
+# Build output is produced inside the image, never copied from the host
+dist
+
+# Local environment / secrets (VITE_API_BASE_URL is passed as a build ARG)
+.env
+.env.*
+!.env.example
+
+# VCS and tooling
+.git
+.gitignore
+
+# Editor / OS cruft
+.vscode
+.idea
+.DS_Store
+
+# Tests / coverage are not needed to build the production bundle
+coverage

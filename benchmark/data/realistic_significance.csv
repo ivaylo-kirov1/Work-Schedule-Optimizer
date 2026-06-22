@@ -1,0 +1,4 @@
+size,budget_s,n_pairs,ga_mean,cpsat_mean,mean_diff,median_diff,rank_biserial,ci95_low,ci95_high,wilcoxon_statistic,p_value
+realistic,30.0,20,9619.85,9771.45,-151.6,-152.5,-1.0,-170.85,-130.9,0.0,1.9073486328125e-06
+realistic,120.0,20,9689.95,9781.7,-91.75,-85.0,-1.0,-106.95,-76.25,0.0,8.844915021211901e-05
+realistic,400.0,20,9723.95,9784.2,-60.25,-51.5,-1.0,-73.6,-47.65,0.0,8.807368035275503e-05
